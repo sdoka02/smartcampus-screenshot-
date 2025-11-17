@@ -1,0 +1,1258 @@
+[
+    {
+        "id": "tab-flow1",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "inj-temp",
+        "type": "inject",
+        "z": "tab-flow1",
+        "name": "temperatura ogni 5s",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "5",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "payload": "",
+        "payloadType": "str",
+        "x": 150,
+        "y": 100,
+        "wires": [
+            [
+                "fn-temp"
+            ]
+        ]
+    },
+    {
+        "id": "fn-temp",
+        "type": "function",
+        "z": "tab-flow1",
+        "name": "generatore temperatura",
+        "func": "// Definiamo l'elenco delle aule come array di stringhe.\nconst rooms = [\"aulaVP.01\", \"aulaVP.02\", \"aulaVP.03\", \"aulaVP.04\"];\n// Per ogni aula dell'array eseguiamo una funzione.\nrooms.forEach((room, i) => {\n  // Calcoliamo un valore di temperatura casuale tra 20 e 28 gradi.\n  // Math.random() restituisce [0,1); *8 lo porta a [0,8).\n  // toFixed(1) limita a 1 decimale ma ritorna stringa; Number() la riporta a numero.\n  const value = Number((20 + Math.random() * 8).toFixed(1)); // 20–28 °C\n\n  // node.send invia un singolo messaggio verso il nodo successivo.\n  node.send({\n    // Qui includiamo l'aula nel percorso del topic.\n    topic: `smartcampus/temperature/${room}`,\n  // il contenuto del messaggio.\n    payload: {\n      // Identificatore univoco del dispositivo: usiamo l'indice i (0-based) + 1.\n      device: `sensor-temperature-${i + 1}`,\n      // Tipo logico del dato\n      type: \"temperature\",\n      // Valore numerico della misura.\n      value,\n      // Unità di misura come stringa (qui gradi Celsius).\n      unit: \"°C\",\n      // Timestamp in millisecondi.\n      ts: Date.now(),\n      // Metadato: l’aula di provenienza (uguale alla parte finale del topic).\n      location: room\n    }\n  });\n});\nreturn null;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 470,
+        "y": 100,
+        "wires": [
+            [
+                "pub-temp0",
+                "pub-temp1"
+            ]
+        ]
+    },
+    {
+        "id": "pub-temp0",
+        "type": "mqtt out",
+        "z": "tab-flow1",
+        "name": "pubblicatore temperatura",
+        "topic": "smartcampus/temperature",
+        "qos": "0",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "71c6c934d381f333",
+        "x": 1010,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "pub-temp1",
+        "type": "mqtt out",
+        "z": "tab-flow1",
+        "name": "pubblicatore temperatura qos1",
+        "topic": "",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "71c6c934d381f333",
+        "x": 1030,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "sub-temp",
+        "type": "mqtt in",
+        "z": "tab-flow1",
+        "name": "ricevitore temperatura",
+        "topic": "smartcampus/temperature/#",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "71c6c934d381f333",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 180,
+        "y": 160,
+        "wires": [
+            [
+                "dbg1"
+            ]
+        ]
+    },
+    {
+        "id": "dbg1",
+        "type": "debug",
+        "z": "tab-flow1",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 380,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "inj-lock",
+        "type": "inject",
+        "z": "tab-flow1",
+        "name": "serratura ogni 7s",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "7",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "payload": "",
+        "payloadType": "str",
+        "x": 140,
+        "y": 240,
+        "wires": [
+            [
+                "fn-lock"
+            ]
+        ]
+    },
+    {
+        "id": "fn-lock",
+        "type": "function",
+        "z": "tab-flow1",
+        "name": "generatore serratura",
+        "func": "const rooms = [\"aulaVP.01\", \"aulaVP.02\", \"aulaVP.03\", \"aulaVP.04\"];\n\n\nrooms.forEach((room, i) => {\n  // Math.random() > 0.5 restituisce boolean; usiamo l'operatore ternario per ON/OFF.\n  const state = Math.random() > 0.5 ? \"ON\" : \"OFF\";\n\n  node.send({\n    topic: `smartcampus/lock/${room}`, // Topic “lock” per aula\n    payload: {\n      device: `lock-${i+1}`,           // ID serratura\n      type: \"lock\",                    // Tipo dato\n      value: state,                    // \"ON\" oppure \"OFF\" \n      ts: Date.now(),                  // Timestamp\n      location: room                   // Aula\n    }\n  });\n});\n\nreturn null;\n\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 240,
+        "wires": [
+            [
+                "pub-lock0",
+                "pub-lock1"
+            ]
+        ]
+    },
+    {
+        "id": "pub-lock0",
+        "type": "mqtt out",
+        "z": "tab-flow1",
+        "name": "pubblicatore serratura",
+        "topic": "",
+        "qos": "0",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "71c6c934d381f333",
+        "x": 1020,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "pub-lock1",
+        "type": "mqtt out",
+        "z": "tab-flow1",
+        "name": "pubblicatore serratura qos1",
+        "topic": "",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "71c6c934d381f333",
+        "x": 1020,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "sub-lock",
+        "type": "mqtt in",
+        "z": "tab-flow1",
+        "name": "ricevitore serratura",
+        "topic": "smartcampus/lock/#",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "71c6c934d381f333",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 160,
+        "y": 300,
+        "wires": [
+            [
+                "dbg2"
+            ]
+        ]
+    },
+    {
+        "id": "dbg2",
+        "type": "debug",
+        "z": "tab-flow1",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 380,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "inj-hum",
+        "type": "inject",
+        "z": "tab-flow1",
+        "name": "umidità ogni 6s",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "6",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "payload": "",
+        "payloadType": "str",
+        "x": 130,
+        "y": 380,
+        "wires": [
+            [
+                "fn-hum"
+            ]
+        ]
+    },
+    {
+        "id": "fn-hum",
+        "type": "function",
+        "z": "tab-flow1",
+        "name": "generatore umidità",
+        "func": "const rooms = [\"aulaVP.01\", \"aulaVP.02\", \"aulaVP.03\", \"aulaVP.04\"];\n\n\nrooms.forEach((room, i) => {\n  // Intervallo 35–75: ampiezza 40 -> Math.random()*40\n  const value = Number((35 + Math.random() * 40).toFixed(1)); // 35–75 %\n\n  node.send({\n    topic: `smartcampus/humidity/${room}`,   // Topic specifico per aula\n    payload: {\n      device: `sensor-hum-${i+1}`,           // ID sensore\n      type: \"humidity\",                      // Tipo dato\n      value,                                 // Valore numerico (percentuale)\n      unit: \"%\",                             // Unità di misura\n      ts: Date.now(),                        // Timestamp (ms)\n      location: room                         // Aula\n    }\n  });\n});\n\nreturn null;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 430,
+        "y": 380,
+        "wires": [
+            [
+                "pub-hum0",
+                "pub-hum1"
+            ]
+        ]
+    },
+    {
+        "id": "pub-hum0",
+        "type": "mqtt out",
+        "z": "tab-flow1",
+        "name": "pubblicatore umidità",
+        "topic": "",
+        "qos": "0",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "71c6c934d381f333",
+        "x": 960,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "pub-hum1",
+        "type": "mqtt out",
+        "z": "tab-flow1",
+        "name": "pubblicatore umidità qos1",
+        "topic": "",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "71c6c934d381f333",
+        "x": 970,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "sub-hum",
+        "type": "mqtt in",
+        "z": "tab-flow1",
+        "name": "ricevitore umidità",
+        "topic": "smartcampus/humidity/#",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "71c6c934d381f333",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 160,
+        "y": 440,
+        "wires": [
+            [
+                "dbg3"
+            ]
+        ]
+    },
+    {
+        "id": "dbg3",
+        "type": "debug",
+        "z": "tab-flow1",
+        "name": "debug 3",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 380,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "021ce872c406be1c",
+        "type": "inject",
+        "z": "tab-flow1",
+        "name": "illuminamento ogni 10s",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "10",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "payload": "",
+        "payloadType": "str",
+        "x": 170,
+        "y": 520,
+        "wires": [
+            [
+                "4dc9b667e630c229"
+            ]
+        ]
+    },
+    {
+        "id": "4dc9b667e630c229",
+        "type": "function",
+        "z": "tab-flow1",
+        "name": "generatore illuminamento",
+        "func": "const rooms = [\"aulaVP.01\", \"aulaVP.02\", \"aulaVP.03\", \"aulaVP.04\"];\n\n\nrooms.forEach((room, i) => {\n  // 150 base + [0..750) -> [150..900)\n  const lux = Math.floor(150 + Math.random() * 750);\n\n  node.send({\n    topic: `smartcampus/lux/${room}`,    // Topic “lux” per aula\n    payload: {\n      device: `sensor-light-${i+1}`,     // ID sensore luce\n      type: \"illuminance\",               // Tipo dato\n      value: lux,                        // Valore intero lux\n      unit: \"lux\",                       // Unità\n      ts: Date.now(),                    // Timestamp\n      location: room                     // Aula\n    }\n  });\n});\n\nreturn null;\n\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 430,
+        "y": 520,
+        "wires": [
+            [
+                "affd565fe2304f0d",
+                "0d0b22ccf043740e"
+            ]
+        ]
+    },
+    {
+        "id": "affd565fe2304f0d",
+        "type": "mqtt out",
+        "z": "tab-flow1",
+        "name": "pubblicatore illuminamento ",
+        "topic": "",
+        "qos": "0",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "71c6c934d381f333",
+        "x": 1000,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "0d0b22ccf043740e",
+        "type": "mqtt out",
+        "z": "tab-flow1",
+        "name": "pubblicatore illuminamento qos1",
+        "topic": "",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "71c6c934d381f333",
+        "x": 1030,
+        "y": 560,
+        "wires": []
+    },
+    {
+        "id": "e61c831f0aaca748",
+        "type": "mqtt in",
+        "z": "tab-flow1",
+        "name": "ricevitore illuminamento",
+        "topic": "smartcampus/lux/#",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "71c6c934d381f333",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 180,
+        "y": 580,
+        "wires": [
+            [
+                "00827a1ae142cfae"
+            ]
+        ]
+    },
+    {
+        "id": "00827a1ae142cfae",
+        "type": "debug",
+        "z": "tab-flow1",
+        "name": "debug 4",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 400,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "f9cd8d0912008397",
+        "type": "inject",
+        "z": "tab-flow1",
+        "name": "occupazione ogni 12s",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "12",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "payload": "",
+        "payloadType": "str",
+        "x": 190,
+        "y": 640,
+        "wires": [
+            [
+                "e2147f89ae7dddd0"
+            ]
+        ]
+    },
+    {
+        "id": "e2147f89ae7dddd0",
+        "type": "function",
+        "z": "tab-flow1",
+        "name": "generatore occupazione",
+        "func": "\n// Mappa aula -> capienza massima (numero di posti).\nconst capacities = {\n  \"aulaVP.01\": 40,\n  \"aulaVP.02\": 30,\n  \"aulaVP.03\": 32,\n  \"aulaVP.04\": 36\n};\n\n// Object.entries restituisce array di coppie [chiave, valore] => [room, cap].\n// idx è l'indice dell'iterazione, utile per generare un device id coerente.\nObject.entries(capacities).forEach(([room, cap], idx) => {\n  // mean = 50% della capienza (tendenza centrale).\n  const mean = cap * 0.5;\n\n  // Rumore casuale: (Math.random()-0.5) in [-0.5..+0.5),\n  // moltiplicato per cap*0.6 (±30% circa attorno alla media).\n  let occ = Math.round(mean + (Math.random() - 0.5) * cap * 0.6);\n\n  //  NON vogliamo valori negativi.\n  if (occ < 0) occ = 0;\n\n  //  NON vogliamo superare la capienza.\n  if (occ > cap) occ = cap;\n\n  node.send({\n    topic: `smartcampus/occupation/${room}`, // Topic “occupation” per aula\n    payload: {\n      device: `sensor-occupancy-${idx+1}`,   // ID sensore di occupazione\n      type: \"occupation\",                     // Tipo dato\n      value: occ,                             // Valore intero: persone presenti\n      capacity: cap,                          // Metadato: capienza massima\n      ts: Date.now(),                         // Timestamp\n      location: room                          // Aula\n    }\n  });\n});\n\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 640,
+        "wires": [
+            [
+                "21603779025847fe",
+                "164610fa8747f3cf"
+            ]
+        ]
+    },
+    {
+        "id": "21603779025847fe",
+        "type": "mqtt out",
+        "z": "tab-flow1",
+        "name": "pubblicatore occupazione",
+        "topic": "",
+        "qos": "0",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "71c6c934d381f333",
+        "x": 1030,
+        "y": 620,
+        "wires": []
+    },
+    {
+        "id": "164610fa8747f3cf",
+        "type": "mqtt out",
+        "z": "tab-flow1",
+        "name": "pubblicatore occupazione qos1",
+        "topic": "",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "71c6c934d381f333",
+        "x": 1050,
+        "y": 680,
+        "wires": []
+    },
+    {
+        "id": "51a25481ff47aeb2",
+        "type": "mqtt in",
+        "z": "tab-flow1",
+        "name": "ricevitore occupazione",
+        "topic": "smartcampus/occupation/#",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "71c6c934d381f333",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 180,
+        "y": 700,
+        "wires": [
+            [
+                "63e1f8750bd4dcaa"
+            ]
+        ]
+    },
+    {
+        "id": "63e1f8750bd4dcaa",
+        "type": "debug",
+        "z": "tab-flow1",
+        "name": "debug 5",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 420,
+        "y": 700,
+        "wires": []
+    },
+    {
+        "id": "fd4700e871fd5d1d",
+        "type": "inject",
+        "z": "tab-flow1",
+        "name": "telecamere ogni 15s",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "15",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "",
+        "topic": "",
+        "payload": "",
+        "payloadType": "str",
+        "x": 180,
+        "y": 760,
+        "wires": [
+            [
+                "8e116fc96410b29d"
+            ]
+        ]
+    },
+    {
+        "id": "8e116fc96410b29d",
+        "type": "function",
+        "z": "tab-flow1",
+        "name": "generatore telecamere ",
+        "func": "const rooms = [\"aulaVP.01\", \"aulaVP.02\", \"aulaVP.03\", \"aulaVP.04\"];\n\n\nrooms.forEach((room, i) => {\n  // 90% online: confronto con 0.9 (se random < 0.9 => 1).\n  const online = Math.random() < 0.9 ? 1 : 0;\n\n  // Evento movimento: può accadere SOLO se online.\n  // 20% di probabilità quando online.\n  const motion = online && Math.random() < 0.2 ? 1 : 0;\n\n  node.send({\n    topic: `smartcampus/cameras/${room}`, // Topic “cameras” per aula\n    payload: {\n      device: `camera-${i+1}`,            // ID camera\n      type: \"camera_status\",              // Tipo dato (stato camera)\n      value: online,                      // 1=online, 0=offline\n      motion_event: motion,               // 1=movimento, 0=nessuno\n      ts: Date.now(),                     // Timestamp\n      location: room                      // Aula\n    }\n  });\n});\n\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 520,
+        "y": 760,
+        "wires": [
+            [
+                "0693ec0546ca49f4",
+                "14cd6f88b1c08e96"
+            ]
+        ]
+    },
+    {
+        "id": "0693ec0546ca49f4",
+        "type": "mqtt out",
+        "z": "tab-flow1",
+        "name": "pubblicatore telecamera",
+        "topic": "",
+        "qos": "0",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "71c6c934d381f333",
+        "x": 990,
+        "y": 740,
+        "wires": []
+    },
+    {
+        "id": "14cd6f88b1c08e96",
+        "type": "mqtt out",
+        "z": "tab-flow1",
+        "name": "pubblicatore telecamera qos1",
+        "topic": "",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "71c6c934d381f333",
+        "x": 990,
+        "y": 800,
+        "wires": []
+    },
+    {
+        "id": "289d02cf03a6443f",
+        "type": "mqtt in",
+        "z": "tab-flow1",
+        "name": "ricevitore telecamera",
+        "topic": "smartcampus/cameras/#",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "71c6c934d381f333",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 190,
+        "y": 820,
+        "wires": [
+            [
+                "b890510b51bd7a52"
+            ]
+        ]
+    },
+    {
+        "id": "b890510b51bd7a52",
+        "type": "debug",
+        "z": "tab-flow1",
+        "name": "debug 6",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 420,
+        "y": 820,
+        "wires": []
+    },
+    {
+        "id": "aeb97733be6ae703",
+        "type": "inject",
+        "z": "tab-flow1",
+        "name": "Qualità dell'aria CO₂ ogni 8s",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "8",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "8",
+        "topic": "",
+        "payload": "",
+        "payloadType": "str",
+        "x": 210,
+        "y": 900,
+        "wires": [
+            [
+                "d0be6a801ae95c7c"
+            ]
+        ]
+    },
+    {
+        "id": "d0be6a801ae95c7c",
+        "type": "function",
+        "z": "tab-flow1",
+        "name": "generatore CO₂",
+        "func": "const rooms = [\"aulaVP.01\", \"aulaVP.02\", \"aulaVP.03\", \"aulaVP.04\"];\n\n// Genera 1 messaggio per aula\nconst msgs = rooms.map((room, i) => {\n  // CO2 tipica: 450–1500 ppm (con picchi fino a 2000)\n  const co2 = Math.floor(450 + Math.random()*1050);\n  return {\n    topic: `smartcampus/co2/${room}`, // topic per aula\n    payload: {\n      device: `sensor-co2-${i+1}`,   // id fittizio\n      type: \"co2\",\n      value: co2,                     // valore numerico\n      unit: \"ppm\",\n      ts: Date.now(),                 // timestamp ms epoch\n      location: room                  // tag aula\n    }\n  };\n});\n\nmsgs.forEach(m => node.send(m));\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 900,
+        "wires": [
+            [
+                "af62703f137b25dd",
+                "5841eacc1ef6dec3"
+            ]
+        ]
+    },
+    {
+        "id": "af62703f137b25dd",
+        "type": "mqtt out",
+        "z": "tab-flow1",
+        "name": "pubblicatore CO₂",
+        "topic": "",
+        "qos": "0",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "71c6c934d381f333",
+        "x": 990,
+        "y": 880,
+        "wires": []
+    },
+    {
+        "id": "5841eacc1ef6dec3",
+        "type": "mqtt out",
+        "z": "tab-flow1",
+        "name": "pubblicatore CO₂ qos1",
+        "topic": "",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "71c6c934d381f333",
+        "x": 980,
+        "y": 940,
+        "wires": []
+    },
+    {
+        "id": "b1fe62dc08d4a656",
+        "type": "mqtt in",
+        "z": "tab-flow1",
+        "name": "ricevitore CO₂",
+        "topic": "smartcampus/co2/#",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "71c6c934d381f333",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 190,
+        "y": 960,
+        "wires": [
+            [
+                "6cb8dceb822201b9"
+            ]
+        ]
+    },
+    {
+        "id": "6cb8dceb822201b9",
+        "type": "debug",
+        "z": "tab-flow1",
+        "name": "debug 7",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 400,
+        "y": 960,
+        "wires": []
+    },
+    {
+        "id": "e37448c96f75fff5",
+        "type": "inject",
+        "z": "tab-flow1",
+        "name": "rumore db ogni 9s",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "9",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "payload": "",
+        "payloadType": "str",
+        "x": 170,
+        "y": 1040,
+        "wires": [
+            [
+                "de05df8a24ec442c"
+            ]
+        ]
+    },
+    {
+        "id": "de05df8a24ec442c",
+        "type": "function",
+        "z": "tab-flow1",
+        "name": "generatore rumore ",
+        "func": "const rooms = [\"aulaVP.01\", \"aulaVP.02\", \"aulaVP.03\", \"aulaVP.04\"];\n\n\nconst msgs = rooms.map((room, i) => {\n  // Rumore tipico in aula: 35–75 dB (lezione animata può salire)\n  const db = Number((35 + Math.random()*40).toFixed(1));\n  return {\n    topic: `smartcampus/noise/${room}`,\n    payload: {\n      device: `sensor-noise-${i+1}`,\n      type: \"noise\",\n      value: db,\n      unit: \"dB\",\n      ts: Date.now(),\n      location: room\n    }\n  };\n});\n\nmsgs.forEach(m => node.send(m));\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 1040,
+        "wires": [
+            [
+                "81cbb7572d89519a",
+                "9fd0302a12f7efd2"
+            ]
+        ]
+    },
+    {
+        "id": "81cbb7572d89519a",
+        "type": "mqtt out",
+        "z": "tab-flow1",
+        "name": "pubblicatore rumore",
+        "topic": "",
+        "qos": "0",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "71c6c934d381f333",
+        "x": 1000,
+        "y": 1020,
+        "wires": []
+    },
+    {
+        "id": "9fd0302a12f7efd2",
+        "type": "mqtt out",
+        "z": "tab-flow1",
+        "name": "pubblicatore rumore qos1",
+        "topic": "",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "71c6c934d381f333",
+        "x": 990,
+        "y": 1080,
+        "wires": []
+    },
+    {
+        "id": "08eb1ca0fc5758de",
+        "type": "mqtt in",
+        "z": "tab-flow1",
+        "name": "ricevitore rumore",
+        "topic": "smartcampus/noise/#",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "71c6c934d381f333",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 180,
+        "y": 1100,
+        "wires": [
+            [
+                "8bced823fb1ff813"
+            ]
+        ]
+    },
+    {
+        "id": "8bced823fb1ff813",
+        "type": "debug",
+        "z": "tab-flow1",
+        "name": "debug 8",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 380,
+        "y": 1100,
+        "wires": []
+    },
+    {
+        "id": "db566ba5423c99d2",
+        "type": "inject",
+        "z": "tab-flow1",
+        "name": "consumo elettrico kW ogni 11s",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "11",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "payload": "",
+        "payloadType": "str",
+        "x": 190,
+        "y": 1180,
+        "wires": [
+            [
+                "6b10ee7901b1617d"
+            ]
+        ]
+    },
+    {
+        "id": "6b10ee7901b1617d",
+        "type": "function",
+        "z": "tab-flow1",
+        "name": "generatore potenza ",
+        "func": "const rooms = [\"aulaVP.01\", \"aulaVP.02\", \"aulaVP.03\", \"aulaVP.04\"];\n\n\n// Genera un messaggio MQTT per ogni aula\nconst msgs = rooms.map((room, i) => {\n  // Simula il consumo elettrico istantaneo tra 0.1 e 2.5 kW\n  const kw = Number((0.1 + Math.random() * 2.4).toFixed(2));\n\n  return {\n    topic: `smartcampus/power/${room}`,   // Topic MQTT specifico per aula\n    payload: {\n      device: `sensor-power-${i + 1}`,   // ID sensore univoco\n      type: \"power\",                     // Tipo di sensore\n      value: kw,                         // Valore numerico simulato\n      unit: \"kW\",                        // Unità di misura\n      ts: Date.now(),                    // Timestamp in millisecondi\n      location: room                     // Aula di riferimento\n    }\n  };\n});\n\n// Invia i messaggi generati\nmsgs.forEach(m => node.send(m));\n\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 470,
+        "y": 1180,
+        "wires": [
+            [
+                "42390434c2376ee5",
+                "271694e86bb68c90"
+            ]
+        ]
+    },
+    {
+        "id": "42390434c2376ee5",
+        "type": "mqtt out",
+        "z": "tab-flow1",
+        "name": "pubblucatore potenza",
+        "topic": "",
+        "qos": "0",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "71c6c934d381f333",
+        "x": 1020,
+        "y": 1160,
+        "wires": []
+    },
+    {
+        "id": "271694e86bb68c90",
+        "type": "mqtt out",
+        "z": "tab-flow1",
+        "name": "pubblicatore potenza qos1",
+        "topic": "",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "71c6c934d381f333",
+        "x": 1040,
+        "y": 1220,
+        "wires": []
+    },
+    {
+        "id": "92de64f411e29186",
+        "type": "mqtt in",
+        "z": "tab-flow1",
+        "name": "ricevitore potenza",
+        "topic": "smartcampus/power/#",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "71c6c934d381f333",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 210,
+        "y": 1240,
+        "wires": [
+            [
+                "44e55a1e014b8273"
+            ]
+        ]
+    },
+    {
+        "id": "44e55a1e014b8273",
+        "type": "debug",
+        "z": "tab-flow1",
+        "name": "debug 9",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 440,
+        "y": 1240,
+        "wires": []
+    },
+    {
+        "id": "75d21d5389f0c0b2",
+        "type": "mqtt in",
+        "z": "tab-flow1",
+        "name": "",
+        "topic": "smartcampus/#",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "71c6c934d381f333",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 160,
+        "y": 1340,
+        "wires": [
+            [
+                "5252fe7fcbf74804",
+                "4f53a2de594d9905"
+            ]
+        ]
+    },
+    {
+        "id": "5252fe7fcbf74804",
+        "type": "function",
+        "z": "tab-flow1",
+        "name": "mapper",
+        "func": "// 1. Normalizza payload: stringa JSON -> oggetto\nlet p = msg.payload;\nif (typeof p === \"string\") {\n  try { p = JSON.parse(p); }\n  catch (e) {\n    node.warn(\"payload JSON non valido\");\n    return null;\n  }\n}\n\n// Controllo minimo: serve almeno type e value\nif (!p || p.type === undefined || p.value === undefined) {\n  node.warn(\"payload senza type o value\");\n  return null;\n}\n\n// 2. Mappa type -> measurement e campo principale\nconst MAP = {\n  temperature: { measurement: \"temperature\", field: \"value\" },\n  humidity: { measurement: \"humidity\", field: \"value\" },\n  co2: { measurement: \"co2\", field: \"value\" },\n  illuminance: { measurement: \"illuminance\", field: \"value\" },\n  noise: { measurement: \"noise\", field: \"value\" },\n  power: { measurement: \"power\", field: \"value\" },\n  occupation: { measurement: \"occupation\", field: \"value\" },\n  lock: { measurement: \"lock\", field: \"state\" },   // ON/OFF\n  camera_status: { measurement: \"camera\", field: \"online\" }   // 1/0\n};\n\nconst t = String(p.type).toLowerCase();\nconst map = MAP[t];\nif (!map) {\n  node.warn(`tipo non mappato: ${t}`);\n  return null;\n}\n\n// 3. TAGS (sempre stringhe)\nconst tags = {\n  device: String(p.device || \"unknown\"),\n  location: String(p.location || \"unknown\"),\n  unit: String(p.unit || \"none\").toLowerCase()\n};\n\n// 4. FIELDS (numerici dove serve)\nconst fields = {};\n\nif (map.field === \"value\") {\n  const n = Number(p.value);\n  if (!Number.isFinite(n)) {\n    node.warn(\"value non numerico\");\n    return null;\n  }\n  fields.value = n;\n\n} else if (map.field === \"state\") {\n  // lock: ON/OFF -> 1/0 + tag testo\n  const on = String(p.value).toUpperCase() === \"ON\" ? 1 : 0;\n  fields.state = on;\n  tags.state_text = String(p.value).toUpperCase();\n\n} else if (map.field === \"online\") {\n  // camera_status: 1/0\n  const online = Number(p.value) === 1 ? 1 : 0;\n  fields.online = online;\n}\n\n// Se c'è motion_event dalla camera lo salvo come field numerico\nif (p.motion_event !== undefined) {\n  const mv = Number(p.motion_event);\n  if (Number.isFinite(mv)) {\n    fields.motion_event = mv;\n  }\n}\n\n// 5. Timestamp in millisecondi (coerente con Date.now() e nodo influx)\nlet timestamp;\nif (p.ts !== undefined && Number.isFinite(Number(p.ts))) {\n  timestamp = String(p.ts);  // è già in ms\n}\n\n// 6. Costruisco il \"point\" per il nodo InfluxDB\nconst point = {\n  measurement: map.measurement,\n  tags,\n  fields\n};\nif (timestamp) point.timestamp = timestamp;\n\n// Formato v2: array di points\nmsg.payload = [point];\n\n// Per compatibilità con il nodo influx-out\nmsg.measurement = point.measurement;\nmsg.tags = point.tags;\nmsg.fields = point.fields;\nif (timestamp) msg.timestamp = point.timestamp;\n\nreturn msg;\n\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 1340,
+        "wires": [
+            [
+                "819a2e0366d3e841",
+                "4639df4463601b2e"
+            ]
+        ]
+    },
+    {
+        "id": "819a2e0366d3e841",
+        "type": "influxdb out",
+        "z": "tab-flow1",
+        "influxdb": "a00b3bcef72d427a",
+        "name": "influx-out",
+        "measurement": "",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "unisubria",
+        "bucket": "iot_data",
+        "x": 700,
+        "y": 1340,
+        "wires": []
+    },
+    {
+        "id": "4639df4463601b2e",
+        "type": "debug",
+        "z": "tab-flow1",
+        "name": "debug 19",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 600,
+        "y": 1420,
+        "wires": []
+    },
+    {
+        "id": "4f53a2de594d9905",
+        "type": "debug",
+        "z": "tab-flow1",
+        "name": "debug 20",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 400,
+        "y": 1420,
+        "wires": []
+    },
+    {
+        "id": "71c6c934d381f333",
+        "type": "mqtt-broker",
+        "name": "mqtt-local",
+        "broker": "mosquitto",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "a00b3bcef72d427a",
+        "type": "influxdb",
+        "hostname": "127.0.0.1",
+        "port": 8086,
+        "protocol": "http",
+        "database": "database",
+        "name": "Influx",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "2.0",
+        "url": "http://us-influxdb:8086",
+        "timeout": 10,
+        "rejectUnauthorized": false
+    },
+    {
+        "id": "563e6e7bd6019c0e",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-influxdb": "0.7.0"
+        }
+    }
+]
